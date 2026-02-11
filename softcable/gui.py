@@ -4,6 +4,7 @@ import os
 import threading
 import time
 
+# === Existing backend imports (unchanged) ===
 from softcable.usb_reader import detect_usb_c
 from softcable.data_test import run_speed_test
 from softcable.power_test import read_power_values
@@ -11,6 +12,9 @@ from softcable.stability_test import run_stability_test
 from softcable.raw_data import get_raw_data
 from softcable.cable_identity import get_cable_info
 from softcable.export_txt import generate_report
+
+# === New Phase 8 import ===
+from softcable.lanes import get_lane_summary
 
 
 class SoftCableGUI:
@@ -25,7 +29,9 @@ class SoftCableGUI:
         self.tabs = ttk.Notebook(root)
         self.tabs.pack(fill="both", expand=True)
 
+        # === Tab order (Option C) ===
         self.create_overview_tab()
+        self.create_lanes_tab()          # NEW PHASE 8 TAB
         self.create_data_tab()
         self.create_power_tab()
         self.create_stability_tab()
@@ -33,7 +39,9 @@ class SoftCableGUI:
         self.create_identity_tab()
         self.create_export_tab()
 
-    # ============== OVERVIEW ==============
+    # ============================================================
+    #  PHASE 1 — OVERVIEW
+    # ============================================================
     def create_overview_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Overview")
@@ -61,7 +69,39 @@ class SoftCableGUI:
         self.info_text.insert(tk.END, f"Current: {info.current} A\n")
         self.info_text.insert(tk.END, f"Wattage: {info.wattage} W\n")
 
-    # ============== DATA TEST ==============
+    # ============================================================
+    #  PHASE 8 — LANES (NEW)
+    # ============================================================
+    def create_lanes_tab(self):
+        frame = ttk.Frame(self.tabs)
+        self.tabs.add(frame, text="Lanes")
+
+        ttk.Label(frame, text="USB‑C Lane Visualizer (Phase 8 – LiveScope)",
+                  font=("Arial", 16)).pack(pady=10)
+
+        self.lanes_output = tk.Text(frame, height=20, width=90)
+        self.lanes_output.pack(pady=10)
+
+        ttk.Button(frame, text="Refresh Lanes", command=self.refresh_lanes).pack()
+
+    def refresh_lanes(self):
+        self.lanes_output.delete("1.0", tk.END)
+
+        summary = get_lane_summary()
+
+        self.lanes_output.insert(tk.END, f"Port: {summary.get('port')}\n")
+        self.lanes_output.insert(tk.END, f"Mode: {summary.get('mode')}\n")
+        self.lanes_output.insert(tk.END, f"Power Role: {summary.get('power_role')}\n")
+        self.lanes_output.insert(tk.END, f"Data Role: {summary.get('data_role')}\n\n")
+
+        lanes = summary.get("lanes", ["unknown"] * 4)
+
+        for i, lane in enumerate(lanes, start=1):
+            self.lanes_output.insert(tk.END, f"Lane {i}: {lane}\n")
+
+    # ============================================================
+    #  PHASE 2 — DATA TEST
+    # ============================================================
     def create_data_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Data Test")
@@ -145,7 +185,9 @@ class SoftCableGUI:
         self.data_output.insert(tk.END, f"Average Write Speed: {result['avg_write']} MB/s\n")
         self.data_output.insert(tk.END, f"Average Read Speed: {result['avg_read']} MB/s\n")
 
-    # ============== POWER TEST ==============
+    # ============================================================
+    #  PHASE 3 — POWER TEST
+    # ============================================================
     def create_power_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Power Test")
@@ -199,7 +241,9 @@ class SoftCableGUI:
 
             time.sleep(1)
 
-    # ============== STABILITY TEST ==============
+    # ============================================================
+    #  PHASE 4 — STABILITY TEST
+    # ============================================================
     def create_stability_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Stability Test")
@@ -245,7 +289,9 @@ class SoftCableGUI:
         self.stab_output.insert(tk.END, f"Read Variance: {result['read_var']} MB/s\n")
         self.stab_output.insert(tk.END, f"Stability Score: {result['score']}/100\n")
 
-    # ============== RAW DATA ==============
+    # ============================================================
+    #  PHASE 5 — RAW DATA
+    # ============================================================
     def create_raw_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Raw Data")
@@ -276,7 +322,9 @@ class SoftCableGUI:
                         self.raw_output.insert(tk.END, f"  {key}: {val}\n")
                 self.raw_output.insert(tk.END, "\n")
 
-    # ============== CABLE IDENTITY ==============
+    # ============================================================
+    #  PHASE 6 — CABLE IDENTITY
+    # ============================================================
     def create_identity_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Cable Identity")
@@ -336,7 +384,9 @@ class SoftCableGUI:
 
             self.identity_output.insert(tk.END, "\n")
 
-    # ============== EXPORT TAB (Phase 7) ==============
+    # ============================================================
+    #  PHASE 7 — EXPORT
+    # ============================================================
     def create_export_tab(self):
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text="Export")
@@ -389,3 +439,12 @@ class SoftCableGUI:
             self.export_output.insert(tk.END, f"Report exported to:\n{path}\n")
         except Exception as e:
             self.export_output.insert(tk.END, f"Error exporting report: {e}\n")
+
+
+# ============================================================
+#  ENTRY POINT
+# ============================================================
+def launch_gui():
+    root = tk.Tk()
+    SoftCableGUI(root)
+    root.mainloop()
