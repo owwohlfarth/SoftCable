@@ -1,4 +1,4 @@
-V1.0.0
+V1.1.0
 # SoftCable – USB‑C Cable & Port Diagnostic Suite
 
 SoftCable is a Linux USB‑C diagnostic tool that analyzes:
